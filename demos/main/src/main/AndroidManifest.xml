@@ -29,6 +29,7 @@
   <uses-sdk/>
 
   <application
+      android:usesCleartextTraffic="true"
       android:label="@string/application_name"
       android:icon="@mipmap/ic_launcher"
       android:banner="@drawable/ic_banner"

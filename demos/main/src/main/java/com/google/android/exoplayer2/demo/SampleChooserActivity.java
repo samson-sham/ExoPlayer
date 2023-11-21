@@ -20,7 +20,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -38,6 +40,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
+import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ImageButton;
@@ -285,8 +288,34 @@ public class SampleChooserActivity extends AppCompatActivity
             != PackageManager.PERMISSION_GRANTED) {
       downloadMediaItemWaitingForNotificationPermission = playlistHolder.mediaItems.get(0);
       requestPermissions(
-          new String[] {Api33.getPostNotificationPermissionString()},
+          new String[]{Api33.getPostNotificationPermissionString()},
           /* requestCode= */ POST_NOTIFICATION_PERMISSION_REQUEST_CODE);
+    } else if (playlistHolder.mediaItems.get(0).mediaMetadata.title.toString().equals("Custom")) {
+      // @DEBUG
+//      Log.d("debug", );
+      final EditText input = new EditText(this);
+      input.setText(playlistHolder.mediaItems.get(0).localConfiguration.uri.toString(),
+          TextView.BufferType.EDITABLE);
+
+      new AlertDialog.Builder(this)
+          .setTitle("Custom URL")
+          .setView(input)
+          .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+              String url = input.getText().toString();
+              playlistHolder.mediaItems.set(0, new MediaItem.Builder().setUri(url)
+                  .setMediaMetadata(new MediaMetadata.Builder().setTitle("Custom").build())
+                  .build());
+            }
+          })
+          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+              dialogInterface.cancel();
+            }
+          })
+          .show();
     } else {
       toggleDownload(playlistHolder.mediaItems.get(0));
     }
@@ -464,6 +493,9 @@ public class SampleChooserActivity extends AppCompatActivity
             break;
           case "subtitle_language":
             subtitleLanguage = reader.nextString();
+            break;
+          case "custom":
+            uri = Uri.parse(reader.nextString());
             break;
           case "playlist":
             checkState(!insidePlaylist, "Invalid nesting of playlists");
@@ -661,7 +693,8 @@ public class SampleChooserActivity extends AppCompatActivity
     private PlaylistHolder(String title, List<MediaItem> mediaItems) {
       checkArgument(!mediaItems.isEmpty());
       this.title = title;
-      this.mediaItems = Collections.unmodifiableList(new ArrayList<>(mediaItems));
+//      this.mediaItems = Collections.unmodifiableList(new ArrayList<>(mediaItems));
+      this.mediaItems = Collections.synchronizedList(new ArrayList<>(mediaItems));
     }
   }
 
